@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ggdrive-cli"
+version = "0.0.0"
+authors = [
+    {name = "Le Vu Loi", email = "levuloihust@gmail.com"}
+]
+description = "Command-line interface (CLI) for uploading and downloading files to and from Google Drive."
+dependencies = [
+    "google-api-python-client >= 2.129.0, < 3",
+    "google-auth-httplib2 >= 0.2.0, < 1",
+    "google-auth-oauthlib >= 1.2.0, < 2",
+    "httpx >= 0.27.0, < 1"
+]
+
+[project.scripts]
+ggdrive-cli = "ggdrive_cli.ggdrive:main"
+
+[tool.setuptools.package-dir]
+"ggdrive_cli" = "lib"
