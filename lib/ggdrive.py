@@ -15,7 +15,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-from .file_utils import format_print_path, check_for_ignore
+from .file_utils import format_print_path, list_files
 
 
 SCOPES = [
@@ -62,24 +62,12 @@ def upload(file_path: str, parent_id: str):
     service = build("drive", "v3", credentials=creds)
 
     print("Scanning...")
-    file_path = os.path.abspath(file_path)
-    stack = [file_path]
-    sequence = []
-    while stack:
-        f = stack.pop()
-        if check_for_ignore(
-            f,
-            ignore_pattern=ignore_pattern,
-            include_pattern=include_pattern,
-            include_over_ignore=include_over_ignore,
-        ):
-            continue
-        sequence.append(f)
-        if os.path.isdir(f):
-            subpaths = os.listdir(f)
-            subpaths = [os.path.join(f, p) for p in subpaths]
-            subpaths = [p for p in subpaths if os.path.isfile(p) or os.path.isdir(p)]
-            stack.extend(subpaths)
+    sequence = list_files(
+        file_path,
+        ignore_pattern=ignore_pattern,
+        include_pattern=include_pattern,
+        include_over_ignore=include_over_ignore,
+    )
 
     print("Uploading...")
     id_tracker = {}
@@ -322,7 +310,6 @@ def main():
     ignore_pattern = args.ignore_pattern
     include_over_ignore = args.include_over_ignore
 
-    # list_files_in_folder()
     if args.command == "up":
         upload(args.file_path, args.parent_id)
     else:
