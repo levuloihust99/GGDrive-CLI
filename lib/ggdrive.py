@@ -153,10 +153,12 @@ def upload_single(
             )
             check_for_error(resp)
         else:  # use resumable upload
-            resp = client.post(
-                DRIVE_API_FILE_ENDPOINT,
+            resp = make_request(
+                url=DRIVE_API_FILE_ENDPOINT,
+                method="post",
+                client=client,
                 params={"uploadType": "resumable"},
-                json=file_metadata,
+                json_data=file_metadata,
                 headers={
                     "Content-Type": "application/json; charset=UTF-8",
                     **authorization_headers,
@@ -382,7 +384,7 @@ def main():
         "--recursive",
         default=True,
         type=eval,
-        help="Whether to upload the folder recursively."
+        help="Whether to upload the folder recursively.",
     )
     args = parser.parse_args()
 
