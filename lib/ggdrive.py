@@ -6,7 +6,6 @@ import httpx
 import argparse
 from typing import Optional, Union
 
-from urllib.parse import urljoin
 from urllib3.filepost import choose_boundary
 from httpx import Response
 
@@ -16,27 +15,10 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
+from lib import app_ctx
+from lib.constants import DRIVE_API_FILE_ENDPOINT, FILE_SIZE_THRESHOLD, SCOPES
+
 from .file_utils import format_print_path, list_files
-
-
-SCOPES = [
-    "https://www.googleapis.com/auth/drive",
-    "https://www.googleapis.com/auth/drive.file",
-    "https://www.googleapis.com/auth/drive.metadata",
-]
-DRIVE_API_BASE_URL = "https://www.googleapis.com/upload/drive/v3/"
-DRIVE_API_FILE_ENDPOINT = urljoin(DRIVE_API_BASE_URL, "files")
-FILE_SIZE_THRESHOLD = 5 * 1024**2
-CREDS = {"value": None}
-SERVICE = {"value": None}
-
-client_secrets_file = "client_secrets.json"
-token_file = "token.json"
-
-# pattern search variables
-include_pattern = None
-ignore_pattern = None
-include_over_ignore = True
 
 
 def check_for_error(resp: Response):
@@ -46,33 +28,38 @@ def check_for_error(resp: Response):
 
 def authenticate():
     creds = None
-    if os.path.exists(token_file):
-        creds = Credentials.from_authorized_user_file(token_file, SCOPES)
+    ctx = app_ctx.get()
+    if os.path.exists(ctx.token_file):
+        creds = Credentials.from_authorized_user_file(ctx.token_file, SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                client_secrets_file, SCOPES
+                ctx.client_secrets_file, SCOPES
             )
+
             creds = flow.run_local_server()
-            with open(token_file, "w") as writer:
+            with open(ctx.token_file, "w") as writer:
                 writer.write(creds.to_json())
     return creds
 
 
 def get_creds():
-    if not CREDS["value"]:
-        CREDS["value"] = authenticate()
-    creds = CREDS["value"]
-    return creds
+    ctx = app_ctx.get()
+    if not ctx.creds:
+        creds = authenticate()
+        app_ctx.set(creds=creds)
+    return ctx.creds
 
 
 def get_service():
-    if not SERVICE["value"]:
+    ctx = app_ctx.get()
+    if not ctx.service:
         creds = get_creds()
-        SERVICE["value"] = build("drive", "v3", credentials=creds)
-    return SERVICE["value"]
+        service = build("drive", "v3", credentials=creds)
+        app_ctx.set(service=service)
+    return ctx.service
 
 
 def make_request(
@@ -227,11 +214,12 @@ def upload_single(
 
 def upload(file_path: str, parent_id: str):
     print("Scanning...")
+    ctx = app_ctx.get()
     sequence = list_files(
         file_path,
-        ignore_pattern=ignore_pattern,
-        include_pattern=include_pattern,
-        include_over_ignore=include_over_ignore,
+        ignore_pattern=ctx.ignore_pattern,
+        include_pattern=ctx.include_pattern,
+        include_over_ignore=ctx.include_over_ignore,
     )
 
     print("Uploading...")
@@ -386,13 +374,29 @@ def main():
         type=eval,
         help="Whether to upload the folder recursively.",
     )
+    parser.add_argument(
+        "--oauth_local_port",
+        default=8080,
+        type=int,
+        help="Port used by the local OAuth callback server.",
+    )
+    parser.add_argument(
+        "--max_local_run_retry",
+        default=3,
+        type=int,
+        help="Maximum number of retry attempts if the OAuth local port is already in use.",
+    )
     args = parser.parse_args()
 
-    global include_pattern, ignore_pattern, include_over_ignore, client_secrets_file, token_file
-    token_file = args.token_file
-    include_pattern = args.include_pattern
-    ignore_pattern = args.ignore_pattern
-    include_over_ignore = args.include_over_ignore
+    app_ctx.set(
+        include_pattern=args.include_pattern,
+        ignore_pattern=args.ignore_pattern,
+        include_over_ignore=args.include_over_ignore,
+        client_secrets_file=args.client_secrets_file,
+        token_file=args.token_file,
+        oauth_local_port=args.oauth_local_port,
+        max_local_run_retry=args.max_local_run_retry,
+    )
 
     if args.command == "up":
         if args.recursive:
