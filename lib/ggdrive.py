@@ -15,8 +15,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-from lib import app_ctx
-from lib.constants import DRIVE_API_FILE_ENDPOINT, FILE_SIZE_THRESHOLD, SCOPES
+from . import app_ctx
+from .constants import DRIVE_API_FILE_ENDPOINT, FILE_SIZE_THRESHOLD, SCOPES
 
 from .file_utils import format_print_path, list_files
 
