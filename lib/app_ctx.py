@@ -9,7 +9,7 @@ class AppContext:
     max_local_run_retry: int = 3
     include_pattern: Optional[Text] = None
     ignore_pattern: Optional[Text] = None
-    include_over_ignore: Optional[Text] = None
+    include_over_ignore: bool = True
     client_secrets_file: Text = "client_secrets.json"
     token_file: Text = "token.json"
     creds: Any = None
@@ -35,6 +35,7 @@ def set(
     max_local_run_retry: Optional[int] = None,
     include_pattern: Optional[Text] = None,
     ignore_pattern: Optional[Text] = None,
+    include_over_ignore: Optional[bool] = None,
     client_secrets_file: Optional[Text] = None,
     token_file: Optional[Text] = None,
     creds: Any = None,
@@ -49,6 +50,8 @@ def set(
         app_ctx.include_pattern = include_pattern
     if ignore_pattern is not None:
         app_ctx.ignore_pattern = ignore_pattern
+    if include_over_ignore is not None:
+        app_ctx.include_over_ignore = include_over_ignore
     if client_secrets_file is not None:
         app_ctx.client_secrets_file = client_secrets_file
     if token_file is not None:
