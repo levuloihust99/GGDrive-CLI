@@ -38,10 +38,20 @@ def authenticate():
             flow = InstalledAppFlow.from_client_secrets_file(
                 ctx.client_secrets_file, SCOPES
             )
-
-            creds = flow.run_local_server()
-            with open(ctx.token_file, "w") as writer:
-                writer.write(creds.to_json())
+            max_attempts = ctx.max_local_run_attempts
+            num_attempts = 0
+            while True:
+                try:
+                    num_attempts += 1
+                    creds = flow.run_local_server(port=ctx.oauth_local_port)
+                    with open(ctx.token_file, "w") as writer:
+                        writer.write(creds.to_json())
+                    break
+                except OSError as exc:
+                    print(exc)
+                    if num_attempts == max_attempts:
+                        raise exc
+                    app_ctx.set(oauth_local_port=ctx.oauth_local_port + 1)
     return creds
 
 
@@ -381,10 +391,10 @@ def main():
         help="Port used by the local OAuth callback server.",
     )
     parser.add_argument(
-        "--max_local_run_retry",
+        "--max_local_run_attempts",
         default=3,
         type=int,
-        help="Maximum number of retry attempts if the OAuth local port is already in use.",
+        help="Maximum number of attempts if the OAuth local port is already in use.",
     )
     args = parser.parse_args()
 
@@ -395,7 +405,7 @@ def main():
         client_secrets_file=args.client_secrets_file,
         token_file=args.token_file,
         oauth_local_port=args.oauth_local_port,
-        max_local_run_retry=args.max_local_run_retry,
+        max_local_run_attempts=args.max_local_run_attempts,
     )
 
     if args.command == "up":

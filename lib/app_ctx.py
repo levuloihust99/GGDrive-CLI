@@ -6,7 +6,7 @@ from typing import Text, Optional, Any
 @dataclass
 class AppContext:
     oauth_local_port: int = 8080
-    max_local_run_retry: int = 3
+    max_local_run_attempts: int = 3
     include_pattern: Optional[Text] = None
     ignore_pattern: Optional[Text] = None
     include_over_ignore: bool = True
@@ -32,7 +32,7 @@ def ensure_context() -> AppContext:
 
 def set(
     oauth_local_port: Optional[int] = None,
-    max_local_run_retry: Optional[int] = None,
+    max_local_run_attempts: Optional[int] = None,
     include_pattern: Optional[Text] = None,
     ignore_pattern: Optional[Text] = None,
     include_over_ignore: Optional[bool] = None,
@@ -44,8 +44,8 @@ def set(
     app_ctx = ensure_context()
     if oauth_local_port is not None:
         app_ctx.oauth_local_port = oauth_local_port
-    if max_local_run_retry is not None:
-        app_ctx.max_local_run_retry = max_local_run_retry
+    if max_local_run_attempts is not None:
+        app_ctx.max_local_run_attempts = max_local_run_attempts
     if include_pattern is not None:
         app_ctx.include_pattern = include_pattern
     if ignore_pattern is not None:
